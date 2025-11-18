@@ -1,0 +1,69 @@
+# ------------------------------------
+# General Python & OS Ignore Rules
+# ------------------------------------
+# Byte-compiled / optimized / setuptools files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# OS and Editor files
+.DS_Store
+.vscode/
+.idea/
+*~
+
+# Virtual Environments
+venv/
+.venv/
+env/
+/bin/
+/include/
+/lib/
+/share/
+
+# Python build and distribution
+build/
+dist/
+*.egg
+*.whl
+
+# ------------------------------------
+# Django Specific Ignore Rules
+# ------------------------------------
+# Database files (local SQLite database)
+*.sqlite3
+/db.sqlite3
+
+# Media and Static files (uploaded/collected assets)
+# Exclude the directory where 'manage.py collectstatic' places files
+/static_collected/
+/staticfiles/
+# Exclude user-uploaded media files
+/media/
+
+# Configuration and Secret files
+# Local settings file that often contains secrets (e.g., SECRET_KEY)
+# This should be loaded from environment variables or a secure vault, not committed.
+local_settings.py
+# Or if you use a specific structure for secrets, like a .env file
+.env
+
+# Migration files (often unnecessary to track in version control, but sometimes included)
+# Uncomment the following line if you don't want to track migration files in version control
+# */migrations/0*.py
+
+# ------------------------------------
+# Testing and Logging
+# ------------------------------------
+# Log files
+*.log
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Caches
+.tox/
