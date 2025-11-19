@@ -11,11 +11,6 @@ class SushiSerializer(serializers.ModelSerializer):
             'price': {'min_value': 0}
         }
 
-class CustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address']
-
 class OrderItemSerializer(serializers.ModelSerializer):
     sushi_id = serializers.IntegerField(source="sushi.id", read_only=True)
     sushi = serializers.PrimaryKeyRelatedField(
@@ -29,8 +24,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     customer_id = serializers.PrimaryKeyRelatedField(
-        source="customer",
-        queryset=Customer.objects.all()
+        queryset=Customer.objects.all(),
+        source="customer"
     )
 
     items = OrderItemSerializer(
@@ -39,6 +34,32 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    new_items = OrderItemSerializer(
+        many=True,
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Order
-        fields = ["id", "customer_id", "created_at", "items"]
+        fields = ["id", "customer_id", "created_at", "items", "new_items"]
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("new_items", [])
+        order = Order.objects.create(**validated_data)
+
+        for item in items_data:
+            OrderItem.objects.create(order=order, **item)
+
+        return order
+
+class CustomerSerializer(serializers.ModelSerializer):
+    orders = OrderSerializer(
+        source="order_set",
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'name', 'email', 'phone', 'address', 'orders']

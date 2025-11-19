@@ -26,7 +26,7 @@ class Customer(models.Model):
 
 class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    customer = models.ForeignKey("Customer", on_delete=models.PROTECT, related_name="orders")
+    customer = models.ForeignKey("Customer", on_delete=models.PROTECT)
     order_items = models.ManyToManyField("Sushi", through="OrderItem")
 
     class Meta:
