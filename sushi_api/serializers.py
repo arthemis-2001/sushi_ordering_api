@@ -12,15 +12,21 @@ class SushiSerializer(serializers.ModelSerializer):
         }
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    sushi_id = serializers.IntegerField(source="sushi.id", read_only=True)
-    sushi = serializers.PrimaryKeyRelatedField(
+    sushi_id = serializers.PrimaryKeyRelatedField(
         queryset=Sushi.objects.all(),
+        source="sushi",
         write_only=True
     )
 
     class Meta:
         model = OrderItem
         fields = ["sushi", "sushi_id", "quantity"]
+        depth = 1
+    
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Quantity must be greater than 0")
+        return value
 
 class OrderSerializer(serializers.ModelSerializer):
     customer_id = serializers.PrimaryKeyRelatedField(
@@ -40,9 +46,11 @@ class OrderSerializer(serializers.ModelSerializer):
         required=False
     )
 
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
     class Meta:
         model = Order
-        fields = ["id", "customer_id", "created_at", "items", "new_items"]
+        fields = ["id", "customer_id", "created_at", "items", "new_items", "total_price"]
 
     def create(self, validated_data):
         items_data = validated_data.pop("new_items", [])
@@ -51,6 +59,7 @@ class OrderSerializer(serializers.ModelSerializer):
         for item in items_data:
             OrderItem.objects.create(order=order, **item)
 
+        order.calculate_total()
         return order
 
 class CustomerSerializer(serializers.ModelSerializer):

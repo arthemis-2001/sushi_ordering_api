@@ -46,6 +46,7 @@ class SingleCustomerView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class OrderView(generics.ListCreateAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     queryset = Order.objects.prefetch_related(
         "orderitem_set",
         "orderitem_set__sushi"
@@ -57,6 +58,7 @@ class OrderView(generics.ListCreateAPIView):
 
 
 class SingleOrderView(generics.RetrieveUpdateDestroyAPIView):
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     queryset = Order.objects.prefetch_related(
         "orderitem_set",
         "orderitem_set__sushi"
