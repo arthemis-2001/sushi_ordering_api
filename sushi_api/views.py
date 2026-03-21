@@ -1,7 +1,8 @@
 from .models import Sushi, Customer, Order
 from .serializers import SushiSerializer, CustomerSerializer, OrderSerializer
 from rest_framework import generics
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
@@ -9,6 +10,7 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 # Create your views here.
 class SushiView(generics.ListCreateAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Sushi.objects.all()
     serializer_class = SushiSerializer
     ordering_fields = ['name', 'price']
@@ -18,12 +20,14 @@ class SushiView(generics.ListCreateAPIView):
 
 class SingleSushiView(generics.RetrieveUpdateDestroyAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Sushi.objects.all()
     serializer_class = SushiSerializer
 
 
 class CustomerView(generics.ListCreateAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Customer.objects.prefetch_related(
         "order_set",
         "order_set__orderitem_set",
@@ -37,6 +41,7 @@ class CustomerView(generics.ListCreateAPIView):
 
 class SingleCustomerView(generics.RetrieveUpdateDestroyAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Customer.objects.prefetch_related(
         "order_set",
         "order_set__orderitem_set",
@@ -47,6 +52,7 @@ class SingleCustomerView(generics.RetrieveUpdateDestroyAPIView):
 
 class OrderView(generics.ListCreateAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Order.objects.prefetch_related(
         "orderitem_set",
         "orderitem_set__sushi"
@@ -59,6 +65,7 @@ class OrderView(generics.ListCreateAPIView):
 
 class SingleOrderView(generics.RetrieveUpdateDestroyAPIView):
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    permission_classes = [IsAuthenticated]
     queryset = Order.objects.prefetch_related(
         "orderitem_set",
         "orderitem_set__sushi"
@@ -67,6 +74,7 @@ class SingleOrderView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def api_root(request, format=None):
     return Response({
         "sushi": reverse("sushi-list", request=request, format=format),

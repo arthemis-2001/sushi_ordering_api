@@ -2,12 +2,27 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from .models import Customer, Sushi, Order, OrderItem
 from decimal import Decimal
+from django.contrib.auth.models import User
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # Create your tests here.
-class SushiTests(APITestCase):
+class BaseAPITestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+
+
+class SushiTests(BaseAPITestCase):
     URL = "/api/sushis"
 
     def setUp(self):
+        super().setUp()
         Sushi.objects.create(name="One Sushi", price=Decimal("5.00"))
 
     def test_list_sushis(self):
@@ -48,12 +63,18 @@ class SushiTests(APITestCase):
         data = {"name": "Another Sushi", "price": Decimal("-3.50")}
         response = self.client.post(self.URL, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_unauthenticated_access_sushi(self):
+        self.client.credentials()
+        response = self.client.get(self.URL)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class CustomerTests(APITestCase):
+class CustomerTests(BaseAPITestCase):
     URL = "/api/customers"
     
     def setUp(self):
+        super().setUp()
         Customer.objects.create(
             name="John Doe",
             email="john.doe@gmail.com", 
@@ -120,12 +141,18 @@ class CustomerTests(APITestCase):
         }
         response = self.client.post(self.URL, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_unauthenticated_access_customer(self):
+        self.client.credentials()
+        response = self.client.get(self.URL)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class OrderTests(APITestCase):
+class OrderTests(BaseAPITestCase):
     URL = "/api/orders"
     
     def setUp(self):
+        super().setUp()
         Customer.objects.create(
             name="John Doe",
             email="john.doe@gmail.com", 
@@ -224,3 +251,8 @@ class OrderTests(APITestCase):
         }
         response = self.client.post(self.URL, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_unauthenticated_access_order(self):
+        self.client.credentials()
+        response = self.client.get(self.URL)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
