@@ -23,7 +23,7 @@ class SushiTests(BaseAPITestCase):
 
     def setUp(self):
         super().setUp()
-        Sushi.objects.create(name="One Sushi", price=Decimal("5.00"))
+        self.sushi = Sushi.objects.create(name="One Sushi", price=Decimal("5.00"))
 
     def test_list_sushis(self):
         response = self.client.get(self.URL)
@@ -31,7 +31,7 @@ class SushiTests(BaseAPITestCase):
         self.assertEqual(Sushi.objects.count(), 1)
     
     def test_get_sushi(self):
-        response = self.client.get(self.URL + "/1")
+        response = self.client.get(f"{self.URL}/{self.sushi.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "One Sushi")
         self.assertEqual(Decimal(response.data["price"]), Decimal("5.00"))
@@ -46,17 +46,17 @@ class SushiTests(BaseAPITestCase):
     
     def test_update_sushi(self):
         data = {"name": "Updated Sushi", "price": Decimal("7.25")}
-        response = self.client.put(self.URL + "/1", data, format='json')
+        response = self.client.put(f"{self.URL}/{self.sushi.id}", data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Decimal(response.data["price"]), Decimal("7.25"))
     
     def test_delete_sushi(self):
-        response = self.client.delete(self.URL + "/1")
+        response = self.client.delete(f"{self.URL}/{self.sushi.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Sushi.objects.count(), 0)
     
     def test_get_nonexistent_sushi(self):
-        response = self.client.get(self.URL + "/2")
+        response = self.client.get(f"{self.URL}/999")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_create_bad_sushi(self):
@@ -75,7 +75,7 @@ class CustomerTests(BaseAPITestCase):
     
     def setUp(self):
         super().setUp()
-        Customer.objects.create(
+        self.customer = Customer.objects.create(
             name="John Doe",
             email="john.doe@gmail.com", 
             phone="+1234567890", 
@@ -88,7 +88,7 @@ class CustomerTests(BaseAPITestCase):
         self.assertEqual(Customer.objects.count(), 1)
     
     def test_get_customer(self):
-        response = self.client.get(self.URL + "/1")
+        response = self.client.get(f"{self.URL}/{self.customer.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "John Doe")
         self.assertEqual(response.data["email"], "john.doe@gmail.com")
@@ -117,7 +117,7 @@ class CustomerTests(BaseAPITestCase):
             "phone": "+12025550113", 
             "address": "128 Main St, Anytown, USA"
         }
-        response = self.client.put(self.URL + "/1", data, format='json')
+        response = self.client.put(f"{self.URL}/{self.customer.id}", data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "Jane Doe")
         self.assertEqual(response.data["email"], "jane.doe@gmail.com")
@@ -125,12 +125,12 @@ class CustomerTests(BaseAPITestCase):
         self.assertEqual(response.data["address"], "128 Main St, Anytown, USA")
     
     def test_delete_customer(self):
-        response = self.client.delete(self.URL + "/1")
+        response = self.client.delete(f"{self.URL}/{self.customer.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Customer.objects.count(), 0)
     
     def test_get_nonexistent_customer(self):
-        response = self.client.get(self.URL + "/2")
+        response = self.client.get(f"{self.URL}/999")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_create_bad_customer(self):
@@ -153,14 +153,14 @@ class OrderTests(BaseAPITestCase):
     
     def setUp(self):
         super().setUp()
-        Customer.objects.create(
+        self.customer1 = Customer.objects.create(
             name="John Doe",
             email="john.doe@gmail.com", 
             phone="+1234567890", 
             address="123 Main St, Anytown, USA"
         )
         
-        Customer.objects.create(
+        self.customer2 = Customer.objects.create(
             name="Jane Doe",
             email="jane.doe@gmail.com", 
             phone="+12025550113", 
@@ -177,7 +177,7 @@ class OrderTests(BaseAPITestCase):
             price=7.99
         )
 
-        self.order = Order.objects.create(customer=Customer.objects.get(id=1))
+        self.order = Order.objects.create(customer=self.customer1)
         OrderItem.objects.create(order=self.order, sushi=self.sushi1, quantity=2)
         OrderItem.objects.create(order=self.order, sushi=self.sushi2, quantity=1)
 
@@ -189,10 +189,10 @@ class OrderTests(BaseAPITestCase):
         self.assertEqual(Order.objects.count(), 1)
     
     def test_get_order(self):
-        response = self.client.get(self.URL + "/1")
+        response = self.client.get(f"{self.URL}/{self.order.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(response.data["customer_id"], 1)
+        self.assertEqual(response.data["customer_id"], self.customer1.id)
         self.assertEqual(len(response.data["items"]), 2)
 
         item1 = response.data["items"][0]
@@ -209,10 +209,10 @@ class OrderTests(BaseAPITestCase):
 
     def test_create_order(self):
         data = {
-            "customer_id": 2,
+            "customer_id": self.customer2.id,
             "new_items": [
                 {
-                    "sushi_id": 1,
+                    "sushi_id": self.sushi1.id,
                     "quantity": 3
                 }
             ]
@@ -220,7 +220,7 @@ class OrderTests(BaseAPITestCase):
         response = self.client.post(self.URL, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertEqual(response.data["customer_id"], 2)
+        self.assertEqual(response.data["customer_id"], self.customer2.id)
         self.assertEqual(len(response.data["items"]), 1)
 
         item1 = response.data["items"][0]
@@ -231,20 +231,20 @@ class OrderTests(BaseAPITestCase):
         self.assertEqual(Decimal(response.data["total_price"]), Decimal("17.97"))
     
     def test_delete_order(self):
-        response = self.client.delete(self.URL + "/1")
+        response = self.client.delete(f"{self.URL}/{self.order.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Order.objects.count(), 0)
     
     def test_get_nonexistent_order(self):
-        response = self.client.get(self.URL + "/2")
+        response = self.client.get(f"{self.URL}/999")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_create_bad_order(self):
         data = {
-            "customer_id": 2,
+            "customer_id": self.customer2.id,
             "new_items": [
                 {
-                    "sushi_id": 1,
+                    "sushi_id": self.sushi1.id,
                     "quantity": 0
                 }
             ]
